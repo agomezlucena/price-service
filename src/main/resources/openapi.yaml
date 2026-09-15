@@ -65,12 +65,15 @@ components:
           type: object
           additionalProperties: true
           description: Generic map for additional custom problem details and extension members.
-
+tags:
+  - name: Price query
 paths:
   /api/v1/products/{productId}/prices:
     get:
       description: |
         obtains the price of the specific product based in the brand and the application date of the product.
+      tags:
+        - Price query
       parameters:
         - name: productId
           description: id of the product

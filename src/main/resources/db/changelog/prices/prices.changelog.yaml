@@ -1,0 +1,231 @@
+databaseChangeLog:
+  - changeSet:
+      author: Alejandro Gómez Lucena
+      comment: define the base schema for saving and querying prices in our system.
+      id: 'price-service-00001'
+      changes:
+        - createTable:
+            tableName: prices
+            columns:
+              - column:
+                  name: brand_id
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price_list
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price
+                  type: decimal
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: varchar(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: start_date
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: priority
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_update
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_update_by
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+
+        - addPrimaryKey:
+            constraintName: pk_prices
+            tableName: prices
+            columnNames: brand_id,product_id,price_list
+
+        - createIndex:
+            indexName: idx_prices_dates
+            tableName: prices
+            columns:
+              - column:
+                  name: start_date
+              - column:
+                  name: end_date
+
+  - changeSet:
+      author: Alejandro Gómez Lucena
+      id: price-service-00002
+      comment: Insert initial price data.
+      changes:
+        - insert:
+            tableName: prices
+            columns:
+              - column:
+                  name: brand_id
+                  valueNumeric: 1
+              - column:
+                  name: product_id
+                  valueNumeric: 35455
+              - column:
+                  name: price_list
+                  valueNumeric: 1
+              - column:
+                  name: start_date
+                  valueDate: '2020-06-14T00:00:00'
+              - column:
+                  name: end_date
+                  valueDate: '2020-12-31T23:59:59'
+              - column:
+                  name: priority
+                  valueNumeric: 0
+              - column:
+                  name: price
+                  valueNumeric: 35.50
+              - column:
+                  name: currency
+                  value: EUR
+              - column:
+                  name: last_update
+                  valueDate: '2020-03-26T14:49:07'
+              - column:
+                  name: last_update_by
+                  value: user1
+
+        - insert:
+            tableName: prices
+            columns:
+              - column:
+                  name: brand_id
+                  valueNumeric: 1
+              - column:
+                  name: product_id
+                  valueNumeric: 35455
+              - column:
+                  name: price_list
+                  valueNumeric: 2
+              - column:
+                  name: start_date
+                  valueDate: '2020-06-14T15:00:00'
+              - column:
+                  name: end_date
+                  valueDate: '2020-06-14T18:30:00'
+              - column:
+                  name: priority
+                  valueNumeric: 1
+              - column:
+                  name: price
+                  valueNumeric: 25.45
+              - column:
+                  name: currency
+                  value: EUR
+              - column:
+                  name: last_update
+                  valueDate: '2020-05-26T15:38:22'
+              - column:
+                  name: last_update_by
+                  value: user1
+
+        - insert:
+            tableName: prices
+            columns:
+              - column:
+                  name: brand_id
+                  valueNumeric: 1
+              - column:
+                  name: product_id
+                  valueNumeric: 35455
+              - column:
+                  name: price_list
+                  valueNumeric: 3
+              - column:
+                  name: start_date
+                  valueDate: '2020-06-15T00:00:00'
+              - column:
+                  name: end_date
+                  valueDate: '2020-06-15T11:00:00'
+              - column:
+                  name: priority
+                  valueNumeric: 1
+              - column:
+                  name: price
+                  valueNumeric: 30.50
+              - column:
+                  name: currency
+                  value: EUR
+              - column:
+                  name: last_update
+                  valueDate: '2020-05-26T15:39:22'
+              - column:
+                  name: last_update_by
+                  value: user2
+
+        - insert:
+            tableName: prices
+            columns:
+              - column:
+                  name: brand_id
+                  valueNumeric: 1
+              - column:
+                  name: product_id
+                  valueNumeric: 35455
+              - column:
+                  name: price_list
+                  valueNumeric: 4
+              - column:
+                  name: start_date
+                  valueDate: '2020-06-15T16:00:00'
+              - column:
+                  name: end_date
+                  valueDate: '2020-12-31T23:59:59'
+              - column:
+                  name: priority
+                  valueNumeric: 1
+              - column:
+                  name: price
+                  valueNumeric: 38.95
+              - column:
+                  name: currency
+                  value: EUR
+              - column:
+                  name: last_update
+                  valueDate: '2020-06-02T10:14:00'
+              - column:
+                  name: last_update_by
+                  value: user1
+
+      rollback:
+        - delete:
+            tableName: prices
+            where: brand_id = 1 AND product_id = 35455 AND price_list = 1
+
+        - delete:
+            tableName: prices
+            where: brand_id = 1 AND product_id = 35455 AND price_list = 2
+
+        - delete:
+            tableName: prices
+            where: brand_id = 1 AND product_id = 35455 AND price_list = 3
+
+        - delete:
+            tableName: prices
+            where: brand_id = 1 AND product_id = 35455 AND price_list = 4

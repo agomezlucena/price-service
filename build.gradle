@@ -30,6 +30,14 @@ openApiGenerate {
     ]
 }
 
+sourceSets {
+    main {
+        java {
+            srcDir "${layout.buildDirectory.asFile.get().absolutePath}/generated/src/main/java"
+        }
+    }
+}
+
 repositories {
     mavenCentral()
 }
@@ -37,6 +45,7 @@ repositories {
 compileJava.dependsOn tasks.openApiGenerate
 
 dependencies {
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0'
     implementation 'org.springframework.boot:spring-boot-h2console'
     implementation 'org.springframework.boot:spring-boot-starter-liquibase'
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'

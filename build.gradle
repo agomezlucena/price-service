@@ -1,0 +1,49 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.1.1'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.openapi.generator' version '7.10.0'
+}
+
+group = 'io.github.agomezlucena'
+version = '0.0.1-SNAPSHOT'
+description = 'price-service'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+openApiGenerate {
+    generatorName = "spring"
+    inputSpec = "$projectDir/src/main/resources/openapi.yaml"
+    outputDir = "${layout.buildDirectory.asFile.get().absolutePath}/generated"
+    apiPackage = 'io.github.agomezlucena.prices.openapi.generated.api'
+    modelPackage = 'io.github.agomezlucena.prices.openapi.generated.model'
+    configOptions = [
+            interfaceOnly       : 'true',
+            useSpringBoot3      : 'true',
+            useTags             : 'true',
+            skipDefaultInterface: 'true',
+            openApiNullable     : 'false'
+    ]
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-h2console'
+    implementation 'org.springframework.boot:spring-boot-starter-liquibase'
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    runtimeOnly 'com.h2database:h2'
+    testImplementation 'org.springframework.boot:spring-boot-starter-liquibase-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

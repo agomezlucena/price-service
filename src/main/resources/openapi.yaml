@@ -70,6 +70,7 @@ tags:
 paths:
   /api/v1/products/{productId}/prices:
     get:
+      operationId: getPrice
       description: |
         obtains the price of the specific product based in the brand and the application date of the product.
       tags:
@@ -93,7 +94,7 @@ paths:
           required: true
           schema:
             type: string
-            format: date
+            format: timestamp
       responses:
         200:
           description: the price was obtained successfully

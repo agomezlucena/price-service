@@ -17,8 +17,8 @@ java {
 
 openApiGenerate {
     generatorName = "spring"
-    inputSpec = "$projectDir/src/main/resources/openapi.yaml"
-    outputDir = "${layout.buildDirectory.asFile.get().absolutePath}/generated"
+    inputSpec = file("src/main/resources/openapi.yaml").toURI().toString()
+    outputDir = layout.buildDirectory.dir("generated").get().asFile.absolutePath
     apiPackage = 'io.github.agomezlucena.prices.openapi.generated.api'
     modelPackage = 'io.github.agomezlucena.prices.openapi.generated.model'
     configOptions = [
@@ -34,6 +34,8 @@ repositories {
     mavenCentral()
 }
 
+compileJava.dependsOn tasks.openApiGenerate
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-h2console'
     implementation 'org.springframework.boot:spring-boot-starter-liquibase'
@@ -47,3 +49,4 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+

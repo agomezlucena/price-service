@@ -288,9 +288,9 @@ Actuator endpoints and Prometheus metrics are exposed:
 
 ### Custom Timed Metrics
 
-The application registers custom Micrometer timers via `@Timed` annotations and `TimedAspect` (configured in `AppConfiguration`) to track latency, throughput, and error rates across critical layers:
+Custom Micrometer timers track latency and throughput across critical service operations:
 
-| Metric Name | Instrumented Layer & Component | Purpose & Description | Exposed Prometheus Metrics |
-|---|---|---|---|
-| `price.rest.query.timespent` | **Inbound HTTP Adapter** (`PriceRestController.getPrice`) | Measures the total execution duration, request count, and throughput of the REST endpoint (`GET /api/v1/products/{productId}/prices`). Used to monitor user-facing API latency and service-level agreements (SLAs). | `price_rest_query_timespent_seconds_count`, `price_rest_query_timespent_seconds_sum`, `price_rest_query_timespent_seconds_max` |
-| `price.database.query.timespent` | **Outbound Persistence Adapter** (`PriceSqlRepository.findPriceInfoByApplicationDate`) | Measures the execution duration and invocation frequency of SQL queries executed via `JdbcClient` against the database. Used to isolate database query latency, identify potential database bottlenecks, and track database access volume. | `price_database_query_timespent_seconds_count`, `price_database_query_timespent_seconds_sum`, `price_database_query_timespent_seconds_max` |
+| Metric | Description | Exposed Prometheus Metrics |
+|:---|:---|:---|
+| `price.rest.query.timespent` | Measures execution duration and throughput of the price query REST API endpoint. | • `price_rest_query_timespent_seconds_count`<br>• `price_rest_query_timespent_seconds_sum`<br>• `price_rest_query_timespent_seconds_max` |
+| `price.database.query.timespent` | Measures execution latency and frequency of price queries against the database. | • `price_database_query_timespent_seconds_count`<br>• `price_database_query_timespent_seconds_sum`<br>• `price_database_query_timespent_seconds_max` |

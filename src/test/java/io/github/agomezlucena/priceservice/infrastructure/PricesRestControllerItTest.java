@@ -62,15 +62,87 @@ public class PricesRestControllerItTest {
         mockMvc.perform(
                 get("/api/v1/products/{productId}/prices", "80")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Brand-Id",1)
-                        .queryParam("applicationDate", DateTimeFormatter.ISO_DATE_TIME.format(OffsetDateTime.now())
-                )
+                        .header("X-Brand-Id", 1)
+                        .queryParam("applicationDate", DateTimeFormatter.ISO_DATE_TIME.format(OffsetDateTime.now()))
         ).andExpect(status().isNotFound())
                 .andDo(print())
-                .andExpect(jsonPath("$.status").value("404"))
+                .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.title").value("Price not found"))
                 .andExpect(jsonPath("$.detail").value("Price was not found"))
                 .andExpect(jsonPath("$.instance").value("/api/v1/products/80/prices"));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenApplicationDateIsMalformed() throws Exception {
+        mockMvc.perform(
+                get("/api/v1/products/{productId}/prices", 35455)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Brand-Id", 1)
+                        .queryParam("applicationDate", "invalid-date")
+        ).andExpect(status().isBadRequest())
+                .andDo(print())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.title").value("Bad Request"))
+                .andExpect(jsonPath("$.detail").value("Failed to convert 'applicationDate' with value: 'invalid-date'"))
+                .andExpect(jsonPath("$.instance").value("/api/v1/products/35455/prices"));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenBrandIdHeaderIsMissing() throws Exception {
+        mockMvc.perform(
+                get("/api/v1/products/{productId}/prices", 35455)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .queryParam("applicationDate", "2020-06-14T10:00:00Z")
+        ).andExpect(status().isBadRequest())
+                .andDo(print())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.title").value("Bad Request"))
+                .andExpect(jsonPath("$.detail").value("Required header 'X-Brand-Id' is not present."))
+                .andExpect(jsonPath("$.instance").value("/api/v1/products/35455/prices"));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenApplicationDateIsMissing() throws Exception {
+        mockMvc.perform(
+                get("/api/v1/products/{productId}/prices", 35455)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Brand-Id", 1)
+        ).andExpect(status().isBadRequest())
+                .andDo(print())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.title").value("Bad Request"))
+                .andExpect(jsonPath("$.detail").value("Required parameter 'applicationDate' is not present."))
+                .andExpect(jsonPath("$.instance").value("/api/v1/products/35455/prices"));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenProductIdIsInvalid() throws Exception {
+        mockMvc.perform(
+                get("/api/v1/products/{productId}/prices", "invalid-product")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Brand-Id", 1)
+                        .queryParam("applicationDate", "2020-06-14T10:00:00Z")
+        ).andExpect(status().isBadRequest())
+                .andDo(print())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.title").value("Bad Request"))
+                .andExpect(jsonPath("$.detail").value("Failed to convert 'productId' with value: 'invalid-product'"))
+                .andExpect(jsonPath("$.instance").value("/api/v1/products/invalid-product/prices"));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenBrandIdHeaderIsInvalid() throws Exception {
+        mockMvc.perform(
+                get("/api/v1/products/{productId}/prices", 35455)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Brand-Id", "invalid-brand")
+                        .queryParam("applicationDate", "2020-06-14T10:00:00Z")
+        ).andExpect(status().isBadRequest())
+                .andDo(print())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.title").value("Bad Request"))
+                .andExpect(jsonPath("$.detail").value("Failed to convert 'X-Brand-Id' with value: 'invalid-brand'"))
+                .andExpect(jsonPath("$.instance").value("/api/v1/products/35455/prices"));
     }
 
 

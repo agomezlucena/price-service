@@ -24,7 +24,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: price
-                  type: decimal
+                  type: numeric(20,2)
                   constraints:
                     nullable: false
               - column:

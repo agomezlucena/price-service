@@ -41,4 +41,25 @@ public class PriceControllerAdvice extends ResponseEntityExceptionHandler {
         problem.setDetail("Price was not found");
         return problem;
     }
+
+    /**
+     * Handles unexpected and unknown exceptions by returning a structured error response
+     * in the form of a {@link ProblemDetail} object. The response includes the HTTP status
+     * code {@code 500 Internal Server Error} and a descriptive error message indicating
+     * that an unexpected error occurred.
+     *
+     * @param ex the unexpected exception that was thrown during request processing
+     * @return a {@link ProblemDetail} object containing error details with a title,
+     *         message, and the associated HTTP status code
+     */
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ExceptionHandler(Exception.class)
+    public ProblemDetail handleUnknownException(Exception ex) {
+        var problem = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+        problem.setTitle("Internal Server Error");
+        problem.setDetail("An unexpected error occurred while querying the price service");
+        return problem;
+    }
+
+
 }

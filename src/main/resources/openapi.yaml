@@ -94,7 +94,7 @@ paths:
           required: true
           schema:
             type: string
-            format: timestamp
+            format: date-time
       responses:
         200:
           description: the price was obtained successfully

@@ -2,6 +2,7 @@ package io.github.agomezlucena.priceservice.infrastructure;
 
 import io.github.agomezlucena.priceservice.domain.PriceInfo;
 import io.github.agomezlucena.priceservice.domain.PriceRepository;
+import io.micrometer.core.annotation.Timed;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -34,6 +35,7 @@ public class PriceSqlRepository implements PriceRepository {
      * @return an {@code Optional} containing the {@code PriceInfo} if a matching record is found, or an empty {@code Optional} otherwise
      */
     @Override
+    @Timed("price.database.query.timespent")
     public Optional<PriceInfo> findPriceInfoByApplicationDate(int brandId, int productId, LocalDateTime applicationDate) {
         return jdbcClient.sql(
             """

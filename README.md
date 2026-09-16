@@ -284,4 +284,13 @@ docker run -p 8080:8080 price-service:latest
 Actuator endpoints and Prometheus metrics are exposed:
 - Health Check: `http://localhost:8080/actuator/health`
 - Prometheus Metrics: `http://localhost:8080/actuator/prometheus`
-- Custom Timed Metrics: `price.rest.query.timespent`, `price.database.query.timespent`
+- Metrics Inspection: `http://localhost:8080/actuator/metrics`
+
+### Custom Timed Metrics
+
+The application registers custom Micrometer timers via `@Timed` annotations and `TimedAspect` (configured in `AppConfiguration`) to track latency, throughput, and error rates across critical layers:
+
+| Metric Name | Instrumented Layer & Component | Purpose & Description | Exposed Prometheus Metrics |
+|---|---|---|---|
+| `price.rest.query.timespent` | **Inbound HTTP Adapter** (`PriceRestController.getPrice`) | Measures the total execution duration, request count, and throughput of the REST endpoint (`GET /api/v1/products/{productId}/prices`). Used to monitor user-facing API latency and service-level agreements (SLAs). | `price_rest_query_timespent_seconds_count`, `price_rest_query_timespent_seconds_sum`, `price_rest_query_timespent_seconds_max` |
+| `price.database.query.timespent` | **Outbound Persistence Adapter** (`PriceSqlRepository.findPriceInfoByApplicationDate`) | Measures the execution duration and invocation frequency of SQL queries executed via `JdbcClient` against the database. Used to isolate database query latency, identify potential database bottlenecks, and track database access volume. | `price_database_query_timespent_seconds_count`, `price_database_query_timespent_seconds_sum`, `price_database_query_timespent_seconds_max` |

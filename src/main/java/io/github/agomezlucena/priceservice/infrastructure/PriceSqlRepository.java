@@ -43,7 +43,7 @@ public class PriceSqlRepository implements PriceRepository {
                   product_id = :productId and
                   start_date <= :applicationDate and
                   end_date >= :applicationDate
-            order by priority desc, last_update desc
+            order by priority desc, last_update_by desc
             limit 1
             """
         ).param("brandId",brandId)

@@ -61,3 +61,10 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
+tasks.register('buildDockerImage', Exec){
+    commandLine "docker", "build",
+            "-t", "price-service:${project.version}",
+            "-t", "price-service:latest",
+            "-f","${project.rootDir}/docker/Dockerfile",
+            "${project.rootDir}"
+}

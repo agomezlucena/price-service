@@ -4,11 +4,11 @@ import io.github.agomezlucena.prices.openapi.generated.api.PriceQueryApi;
 import io.github.agomezlucena.prices.openapi.generated.model.PriceResponse;
 import io.github.agomezlucena.priceservice.application.PriceInfoApplicationDateQuery;
 import io.github.agomezlucena.priceservice.application.PriceInfoFinder;
-import io.github.agomezlucena.priceservice.domain.PriceNotFoundException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 
 @RestController
 public class PriceRestController implements PriceQueryApi {
@@ -26,7 +26,7 @@ public class PriceRestController implements PriceQueryApi {
         var priceInfoQuery = new PriceInfoApplicationDateQuery(
                 xBrandId,
                 productId,
-                applicationDate.toLocalDateTime()
+                applicationDate.atZoneSameInstant(ZoneId.of("Z")).toLocalDateTime()
         );
 
         var obtainedPriceInfo = priceInfoFinder.findPriceInfoByApplicationDate(priceInfoQuery);

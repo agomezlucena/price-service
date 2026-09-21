@@ -14,6 +14,7 @@ graph TD
         REST[PriceRestController<br/>OpenAPI Inbound Adapter]
         Advice[PriceControllerAdvice<br/>RFC 9457 Problem Details]
         SQLRepo[PriceSqlRepository<br/>Spring JdbcClient & H2]
+        SqlTranslator[PriceInfoCriteriaSqlTranslator<br/>Criteria to SQL Translator]
         Mapper[PriceInfoResponseMapper<br/>MapStruct]
         Config[AppConfiguration<br/>Spring DI Wiring]
     end
@@ -26,6 +27,7 @@ graph TD
 
     subgraph Domain ["Domain Core (Innermost Ring)"]
         Model[PriceInfo<br/>Core Entity / Value Object]
+        Criteria[PriceInfoQuery & Criteria<br/>Domain Query Specification]
         Exception[PriceNotFoundException<br/>Domain Exception]
         RepoPort[PriceRepository<br/>Outbound Port / Interface]
     end
@@ -33,7 +35,10 @@ graph TD
     REST --> Finder
     Finder -. implemented by .-> UseCase
     UseCase --> RepoPort
+    UseCase --> Criteria
     SQLRepo -. implements .-> RepoPort
+    SQLRepo --> SqlTranslator
+    SqlTranslator --> Criteria
     Config --> UseCase
     Config --> SQLRepo
     REST --> Mapper
@@ -47,7 +52,15 @@ src/main/java/io/github/agomezlucena/priceservice/
 ├── domain/                  # Core Business Domain (Zero external dependencies)
 │   ├── PriceInfo.java       # Domain Entity / Record
 │   ├── PriceRepository.java # Outbound Port (Repository Interface)
-│   └── PriceNotFoundException.java # Domain-specific business exception
+│   ├── PriceNotFoundException.java # Domain-specific business exception
+│   └── criteria/            # Domain Criteria Pattern Models & Rules
+│       ├── CriterionComparator.java       # Comparison operators (EQUALS, GT, GTE, LT, LTE)
+│       ├── InvalidPriceCriteriaException.java # Exception for malformed criteria
+│       ├── PriceInfoCriterion.java        # Single field filtering condition
+│       ├── PriceInfoQuery.java            # Composite query object with fluent Builder
+│       ├── PriceInfoQueryField.java       # Queryable domain fields enum
+│       ├── PriceInfoSortCriterion.java    # Sorting criteria (field and direction)
+│       └── PriceInfoSortDirection.java    # Sort direction (ASC, DESC)
 │
 ├── application/             # Application Use Cases & Inbound Ports
 │   ├── PriceInfoFinder.java # Inbound Port (Use Case Interface)
@@ -60,7 +73,10 @@ src/main/java/io/github/agomezlucena/priceservice/
 │   ├── PriceRestController.java # REST Controller (Inbound HTTP Adapter)
 │   ├── PriceControllerAdvice.java # Global Exception Handler (RFC 9457)
 │   ├── PriceInfoResponseMapper.java # MapStruct Mapper (Application DTO -> Web DTO)
-│   └── PriceSqlRepository.java # Database Adapter (Outbound JDBC Adapter)
+│   ├── PriceSqlRepository.java # Database Adapter (Outbound JDBC Adapter)
+│   └── criteria/            # Infrastructure Criteria SQL Translation
+│       ├── PriceInfoCriteriaSqlQuery.java      # Parameterized SQL query record
+│       └── PriceInfoCriteriaSqlTranslator.java # Domain criteria to SQL translator
 │
 └── PriceServiceApplication.java # Spring Boot Entrypoint
 ```
@@ -72,18 +88,20 @@ src/main/java/io/github/agomezlucena/priceservice/
 #### 1. Domain Layer (`domain`)
 - **Innermost core** containing business concepts, entities, value objects, and contracts.
 - **Pure Java**: Has zero dependencies on external frameworks, Spring Boot, or persistence libraries.
-- Defines `PriceRepository` (outbound port) specifying *what* data operations the domain needs, without dictating *how* they are implemented.
+- Defines `PriceRepository` (outbound port) specifying criteria-based queries (`PriceInfoQuery`) without dictating how they are implemented.
+- Encapsulates domain query criteria (`PriceInfoQuery`, `PriceInfoCriterion`, `PriceInfoSortCriterion`, `PriceInfoQueryField`, `CriterionComparator`, `PriceInfoSortDirection`) and domain business exceptions (`PriceNotFoundException`, `InvalidPriceCriteriaException`).
 
 #### 2. Application Layer (`application`)
 - Contains application-specific business workflows and use cases (`FindPriceInfoUseCase`).
 - Defines inbound ports (`PriceInfoFinder`) and request/response DTOs (`PriceInfoApplicationDateQuery`, `PriceInfoResponse`).
-- Coordinates domain entities and ports to satisfy application requirements while keeping domain logic clean and decoupled.
+- Constructs domain `PriceInfoQuery` specifications from application queries and coordinates domain entities and ports while keeping domain logic clean and decoupled.
 
 #### 3. Infrastructure Layer (`infrastructure`)
 - Adapts external mechanisms (HTTP requests, databases, serialization, framework configuration) to the application and domain layers.
 - **Inbound Adapter**: `PriceRestController` implements the generated OpenAPI contract interface (`PriceQueryApi`) and delegates execution to `PriceInfoFinder`.
 - **Outbound Adapter**: `PriceSqlRepository` implements `PriceRepository` using Spring's `JdbcClient` to query the relational database.
-- **Error Handling**: `PriceControllerAdvice` provides centralized exception handling, translating domain exceptions (`PriceNotFoundException`), validation/binding errors, and unexpected server failures into standard RFC 9457 `ProblemDetail` HTTP responses.
+- **SQL Criteria Translation**: `PriceInfoCriteriaSqlTranslator` dynamically translates domain `PriceInfoQuery` criteria into parameterized SQL queries (`PriceInfoCriteriaSqlQuery`).
+- **Error Handling**: `PriceControllerAdvice` provides centralized exception handling, translating domain exceptions (`PriceNotFoundException`, `InvalidPriceCriteriaException`), validation/binding errors, and unexpected server failures into standard RFC 9457 `ProblemDetail` HTTP responses.
 - **Inversion of Control**: `AppConfiguration` wires application use cases with infrastructure adapters using Spring dependency injection.
 
 ---
@@ -121,8 +139,8 @@ Compile the project and run all unit and integration tests:
 ```
 
 The test suite covers:
-- **Unit Tests**: Domain and application use cases (`FindPriceInfoUseCaseTest`), MapStruct mappers (`PriceInfoResponseMapperTest`), and centralized error handling (`PriceControllerAdviceTest`).
-- **Integration Tests**: Full Spring MVC test suite (`PricesRestControllerItTest`) validating the 5 standard price rate scenarios, promotional priority resolution, and negative cases (malformed dates, missing headers, missing parameters).
+- **Unit Tests**: Domain criteria and query specifications (`PriceInfoQueryTest`, `PriceInfoCriterionTest`, `PriceInfoSortCriterionTest`, `PriceInfoSortDirectionTest`), SQL criteria translation (`PriceInfoQuerySqlTranslatorTest`), application use cases (`FindPriceInfoUseCaseTest`), and MapStruct mappers (`PriceInfoResponseMapperTest`).
+- **Integration Tests**: Database persistence adapter with in-memory H2 & Liquibase (`PriceSqlRepositoryItTest`), global exception handling (`PriceControllerAdviceItTest`), and full Spring MVC REST test suite (`PricesRestControllerItTest`) validating the 5 standard price rate scenarios, promotional priority resolution, and negative cases (malformed dates, missing headers, missing parameters).
 
 ### Run Locally
 

@@ -1,5 +1,7 @@
 package io.github.agomezlucena.priceservice.application;
 
+import java.util.Optional;
+
 /**
  * Interface for retrieving price information based on specific criteria such as brand, product,
  * and application date.
@@ -17,5 +19,5 @@ public interface PriceInfoFinder {
      *
      * @throws io.github.agomezlucena.priceservice.domain.PriceNotFoundException when no are found for that query.
      */
-    PriceInfoResponse findPriceInfoByApplicationDate(PriceInfoApplicationDateQuery query);
+    Optional<PriceInfoResponse> findPriceInfoByApplicationDate(PriceInfoApplicationDateQuery query);
 }

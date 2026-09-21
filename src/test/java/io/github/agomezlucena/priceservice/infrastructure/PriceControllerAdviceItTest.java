@@ -1,6 +1,7 @@
 package io.github.agomezlucena.priceservice.infrastructure;
 
 import io.github.agomezlucena.priceservice.domain.PriceNotFoundException;
+import io.github.agomezlucena.priceservice.domain.criteria.InvalidPriceCriteriaException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -31,6 +32,11 @@ class PriceControllerAdviceItTest {
         @GetMapping("/test/unknown-error")
         public void throwUnknownError() {
             throw new RuntimeException("Database connection failure");
+        }
+
+        @GetMapping("/test/invalid-criteria")
+        public void throwInvalidPriceCriteria() {
+            throw new InvalidPriceCriteriaException("Invalid price criteria");
         }
     }
 
@@ -65,6 +71,17 @@ class PriceControllerAdviceItTest {
     }
 
     @Test
+    void shouldHandleInvalidPriceCriteriaExceptionDirectly() {
+        InvalidPriceCriteriaException ex = new InvalidPriceCriteriaException("Invalid price criteria");
+        ProblemDetail problemDetail = controllerAdvice.handleInvalidPriceCriteriaException(ex);
+
+        assertNotNull(problemDetail);
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), problemDetail.getStatus());
+        assertEquals("Internal Server Error", problemDetail.getTitle());
+        assertEquals("An unexpected error occurred while querying the price service", problemDetail.getDetail());
+    }
+
+    @Test
     void shouldReturnProblemDetailWithStatus404WhenPriceNotFoundExceptionIsThrown() throws Exception {
         mockMvc.perform(get("/test/price-not-found"))
                 .andExpect(status().isNotFound())
@@ -76,6 +93,15 @@ class PriceControllerAdviceItTest {
     @Test
     void shouldReturnProblemDetailWithStatus500WhenUnknownExceptionIsThrown() throws Exception {
         mockMvc.perform(get("/test/unknown-error"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.status").value(500))
+                .andExpect(jsonPath("$.title").value("Internal Server Error"))
+                .andExpect(jsonPath("$.detail").value("An unexpected error occurred while querying the price service"));
+    }
+
+    @Test
+    void shouldReturnProblemDetailWithStatus500WhenInvalidPriceCriteriaExceptionIsThrown() throws Exception {
+        mockMvc.perform(get("/test/invalid-criteria"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.status").value(500))
                 .andExpect(jsonPath("$.title").value("Internal Server Error"))

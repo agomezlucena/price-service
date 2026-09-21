@@ -4,6 +4,7 @@ import io.github.agomezlucena.prices.openapi.generated.api.PriceQueryApi;
 import io.github.agomezlucena.prices.openapi.generated.model.PriceResponse;
 import io.github.agomezlucena.priceservice.application.PriceInfoApplicationDateQuery;
 import io.github.agomezlucena.priceservice.application.PriceInfoFinder;
+import io.github.agomezlucena.priceservice.domain.PriceNotFoundException;
 import io.micrometer.core.annotation.Timed;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,8 +48,9 @@ public class PriceRestController implements PriceQueryApi {
                 applicationDate.atZoneSameInstant(ZoneId.of("Z")).toLocalDateTime()
         );
 
-        var obtainedPriceInfo = priceInfoFinder.findPriceInfoByApplicationDate(priceInfoQuery);
-        return ResponseEntity.ok()
-                .body(priceInfoResponseMapper.toPriceResponse(obtainedPriceInfo));
+        return priceInfoFinder.findPriceInfoByApplicationDate(priceInfoQuery)
+                .map(priceInfoResponseMapper::toPriceResponse)
+                .map(ResponseEntity::ok)
+                .orElseThrow(PriceNotFoundException::new);
     }
 }

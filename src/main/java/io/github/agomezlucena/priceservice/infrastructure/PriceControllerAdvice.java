@@ -1,6 +1,9 @@
 package io.github.agomezlucena.priceservice.infrastructure;
 
 import io.github.agomezlucena.priceservice.domain.PriceNotFoundException;
+import io.github.agomezlucena.priceservice.domain.criteria.InvalidPriceCriteriaException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,7 +24,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
  */
 @RestControllerAdvice
 public class PriceControllerAdvice extends ResponseEntityExceptionHandler {
-
+    private static final Logger LOG = LoggerFactory.getLogger(PriceControllerAdvice.class);
     /**
      * Handles the {@code PriceNotFoundException} by returning a structured error response
      * in the form of a {@link ProblemDetail} object. The response includes the HTTP status
@@ -43,6 +46,24 @@ public class PriceControllerAdvice extends ResponseEntityExceptionHandler {
     }
 
     /**
+     * Handles the {@code InvalidPriceCriteriaException} by returning a structured error response
+     * in the form of a {@link ProblemDetail} object. The response includes the HTTP status code
+     * {@code 500 Internal Server Error} and a descriptive error message indicating that there was
+     * an issue with the price criteria, preventing proper query execution.
+     *
+     * @param ex the exception object of type {@code InvalidPriceCriteriaException} that was thrown when
+     *           the price query criteria was invalid or malformed
+     * @return a {@link ProblemDetail} object containing error details with a title, message,
+     *         and the associated HTTP status code
+     */
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ExceptionHandler(InvalidPriceCriteriaException.class)
+    public ProblemDetail handleInvalidPriceCriteriaException(InvalidPriceCriteriaException ex) {
+        LOG.debug("There was an error processing the query",ex);
+        return createGenericError();
+    }
+
+    /**
      * Handles unexpected and unknown exceptions by returning a structured error response
      * in the form of a {@link ProblemDetail} object. The response includes the HTTP status
      * code {@code 500 Internal Server Error} and a descriptive error message indicating
@@ -55,11 +76,14 @@ public class PriceControllerAdvice extends ResponseEntityExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleUnknownException(Exception ex) {
+        LOG.error("there was an unknown exception",ex);
+        return createGenericError();
+    }
+
+    private ProblemDetail createGenericError(){
         var problem = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
         problem.setTitle("Internal Server Error");
         problem.setDetail("An unexpected error occurred while querying the price service");
         return problem;
     }
-
-
 }

@@ -1,6 +1,9 @@
 package io.github.agomezlucena.priceservice.infrastructure;
 
 import io.github.agomezlucena.priceservice.domain.PriceInfo;
+import io.github.agomezlucena.priceservice.domain.criteria.CriterionComparator;
+import io.github.agomezlucena.priceservice.domain.criteria.PriceInfoQuery;
+import io.github.agomezlucena.priceservice.domain.criteria.PriceInfoSortCriterion;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -8,6 +11,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import static io.github.agomezlucena.priceservice.domain.criteria.PriceInfoQueryField.LAST_UPDATE_BY;
+import static io.github.agomezlucena.priceservice.domain.criteria.PriceInfoQueryField.PRIORITY;
+import static io.github.agomezlucena.priceservice.domain.criteria.PriceInfoSortDirection.DESC;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @SpringBootTest
@@ -16,15 +22,7 @@ class PriceSqlRepositoryItTest {
     PriceSqlRepository priceSqlRepository;
 
     @Test
-    void shouldReturnAnEmptyOptionalIfNoPriceInfoIsFound() {
-        var obtainedValue = priceSqlRepository.findPriceInfoByApplicationDate(1, 1, LocalDateTime.now());
-        assertThat(obtainedValue)
-                .describedAs("the obtained value should be empty because it doesn't exists")
-                .isEmpty();
-    }
-
-    @Test
-    void shouldReturnTheExpectedPriceInfoIfExists() {
+    void shouldReturnTheExpectedPriceInfoWhenQueryingByCriteria() {
         var givenApplicationDate = LocalDateTime.of(2020, 6, 14, 17, 0, 0);
         var expectedValue = new PriceInfo(
                 1,
@@ -36,10 +34,43 @@ class PriceSqlRepositoryItTest {
                 "EUR"
         );
 
-        var obtainedValue = priceSqlRepository.findPriceInfoByApplicationDate(1, 35455, givenApplicationDate);
+        var criteria = PriceInfoQuery.builder()
+                .brandId(1)
+                .productId(35455)
+                .withStartDate(CriterionComparator.LESS_THAN_OR_EQUAL, givenApplicationDate)
+                .withEndDate(CriterionComparator.GREATER_THAN_OR_EQUAL, givenApplicationDate)
+                .orderBy(
+                        PriceInfoSortCriterion.of(PRIORITY, DESC),
+                        PriceInfoSortCriterion.of(LAST_UPDATE_BY, DESC)
+                )
+                .limit(1)
+                .build();
+
+        var obtainedValue = priceSqlRepository.findPriceInfoByCriteria(criteria);
 
         assertThat(obtainedValue)
-                .describedAs("should return the price with maximum priority for that date of that product")
+                .describedAs("should return the price info matching the criteria")
                 .contains(expectedValue);
+    }
+
+    @Test
+    void shouldReturnEmptyOptionalWhenQueryingByCriteriaAndNotFound() {
+        var criteria = PriceInfoQuery.builder()
+                .brandId(1)
+                .productId(99999)
+                .withStartDate(CriterionComparator.LESS_THAN_OR_EQUAL, LocalDateTime.now())
+                .withEndDate(CriterionComparator.GREATER_THAN_OR_EQUAL, LocalDateTime.now())
+                .orderBy(
+                        PriceInfoSortCriterion.of(PRIORITY, DESC),
+                        PriceInfoSortCriterion.of(LAST_UPDATE_BY, DESC)
+                )
+                .limit(1)
+                .build();
+
+        var obtainedValue = priceSqlRepository.findPriceInfoByCriteria(criteria);
+
+        assertThat(obtainedValue)
+                .describedAs("the obtained value should be empty because product does not exist")
+                .isEmpty();
     }
 }

@@ -1,8 +1,16 @@
 package io.github.agomezlucena.priceservice.application;
 
 import io.github.agomezlucena.priceservice.domain.PriceInfo;
-import io.github.agomezlucena.priceservice.domain.PriceNotFoundException;
 import io.github.agomezlucena.priceservice.domain.PriceRepository;
+import io.github.agomezlucena.priceservice.domain.criteria.CriterionComparator;
+import io.github.agomezlucena.priceservice.domain.criteria.PriceInfoQuery;
+import io.github.agomezlucena.priceservice.domain.criteria.PriceInfoSortCriterion;
+
+import java.util.Optional;
+
+import static io.github.agomezlucena.priceservice.domain.criteria.PriceInfoQueryField.LAST_UPDATE_BY;
+import static io.github.agomezlucena.priceservice.domain.criteria.PriceInfoQueryField.PRIORITY;
+import static io.github.agomezlucena.priceservice.domain.criteria.PriceInfoSortDirection.DESC;
 
 /**
  * Use case implementation for finding price information based on application date, brand, and product.
@@ -28,14 +36,23 @@ public class FindPriceInfoUseCase implements PriceInfoFinder {
      *              product ID, and application date for which the price information is being queried
      * @return a {@code PriceInfoResponse} containing price details, including brand ID, product ID,
      *         price list, validity period, price value, and currency
-     * @throws PriceNotFoundException if no price information is found for the given query parameters
      */
     @Override
-    public PriceInfoResponse findPriceInfoByApplicationDate(PriceInfoApplicationDateQuery query) {
-        return priceRepository.findPriceInfoByApplicationDate(
-                    query.brandId(), query.productId(), query.applicationDate()
-                ).map(this::mapPriceInfo)
-                .orElseThrow(PriceNotFoundException::new);
+    public Optional<PriceInfoResponse> findPriceInfoByApplicationDate(PriceInfoApplicationDateQuery query) {
+        var criteria = PriceInfoQuery.builder()
+                .brandId(query.brandId())
+                .productId(query.productId())
+                .withStartDate(CriterionComparator.LESS_THAN_OR_EQUAL,query.applicationDate())
+                .withEndDate(CriterionComparator.GREATER_THAN_OR_EQUAL,query.applicationDate())
+                .orderBy(
+                        PriceInfoSortCriterion.of(PRIORITY, DESC),
+                        PriceInfoSortCriterion.of(LAST_UPDATE_BY, DESC)
+                )
+                .limit(1)
+                .build();
+
+        return priceRepository.findPriceInfoByCriteria(criteria)
+                .map(this::mapPriceInfo);
     }
 
     private PriceInfoResponse mapPriceInfo(PriceInfo priceInfo) {

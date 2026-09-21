@@ -1,8 +1,11 @@
 package io.github.agomezlucena.priceservice.infrastructure;
 
 import io.github.agomezlucena.priceservice.domain.PriceInfo;
+import io.github.agomezlucena.priceservice.domain.criteria.PriceInfoQuery;
 import io.github.agomezlucena.priceservice.domain.PriceRepository;
+import io.github.agomezlucena.priceservice.infrastructure.criteria.PriceInfoCriteriaSqlTranslator;
 import io.micrometer.core.annotation.Timed;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -13,45 +16,40 @@ import java.util.Optional;
  * Implementation of the {@link PriceRepository} interface using SQL for data retrieval.
  * This class is marked as a Spring repository and interacts with the database through
  * the {@code JdbcClient}.
- *
+ * <p>
  * The main purpose of this repository is to query price information based on the brand ID,
- * product ID, and application date.
+ * product ID, and application date or using criteria.
  */
 @Repository
 public class PriceSqlRepository implements PriceRepository {
     private final JdbcClient jdbcClient;
+    private final PriceInfoCriteriaSqlTranslator sqlTranslator;
 
-    public PriceSqlRepository(JdbcClient jdbcClient) {
+    @Autowired
+    public PriceSqlRepository(JdbcClient jdbcClient, PriceInfoCriteriaSqlTranslator sqlTranslator) {
         this.jdbcClient = jdbcClient;
+        this.sqlTranslator = sqlTranslator;
     }
 
     /**
-     * Retrieves the price information for a specific product and brand based on the provided application date.
-     * The method queries the database to find the price with the highest priority that is valid for the specified time range.
+     * Retrieves price information based on the provided {@link PriceInfoQuery}.
      *
-     * @param brandId         the ID of the brand to which the product belongs
-     * @param productId       the ID of the product for which the price information is requested
-     * @param applicationDate the date and time for which the price information needs to be determined
+     * @param criteria the criteria describing the filter and ordering conditions
      * @return an {@code Optional} containing the {@code PriceInfo} if a matching record is found, or an empty {@code Optional} otherwise
      */
     @Override
     @Timed("price.database.query.timespent")
-    public Optional<PriceInfo> findPriceInfoByApplicationDate(int brandId, int productId, LocalDateTime applicationDate) {
-        return jdbcClient.sql(
-            """
-            select brand_id, product_id, price_list, start_date, end_date, price,currency
-            from prices
-            where brand_id = :brandId and
-                  product_id = :productId and
-                  start_date <= :applicationDate and
-                  end_date >= :applicationDate
-            order by priority desc, last_update_by desc
-            limit 1
-            """
-        ).param("brandId",brandId)
-        .param("productId",productId)
-        .param("applicationDate",applicationDate)
-        .query((rs,_) -> new PriceInfo(
+    public Optional<PriceInfo> findPriceInfoByCriteria(PriceInfoQuery criteria) {
+        var query = sqlTranslator.translate(criteria);
+
+        var spec = jdbcClient.sql(query.sql())
+                .params(query.parameters());
+
+        if (criteria.limit() != null && criteria.limit() > 0) {
+            spec = spec.withMaxRows(criteria.limit());
+        }
+
+        return spec.query((rs, _) -> new PriceInfo(
                 rs.getInt("brand_id"),
                 rs.getInt("product_id"),
                 rs.getInt("price_list"),

@@ -7,8 +7,7 @@ package io.github.agomezlucena.priceservice.domain.criteria;
  * Implementations of this interface are expected to provide logic to translate
  * the query object into a specific format that can be processed to retrieve price information.
  *
- * @param <T> the type of the translated representation, such as a SQL query,
- *            REST API query, or any other format required by the implementing class.
+ * @param <T> the type of the translated representation.
  */
 public interface PriceInfoQueryTranslator <T> {
     /**

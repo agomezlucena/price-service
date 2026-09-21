@@ -151,4 +151,32 @@ class PriceInfoQueryTest {
                 .isInstanceOf(InvalidPriceCriteriaException.class)
                 .hasMessage("Invalid price info query the criteria limit must greater than 0");
     }
+
+    @Test
+    void shouldReturnTrueWhenLimitIsOneForSingleResult() {
+        var query = PriceInfoQuery.builder()
+                .brandId(1)
+                .productId(35455)
+                .limit(1)
+                .build();
+
+        assertThat(query.isForSingleResult()).isTrue();
+    }
+
+    @Test
+    void shouldReturnFalseWhenLimitIsNotOneForSingleResult() {
+        var queryWithoutLimit = PriceInfoQuery.builder()
+                .brandId(1)
+                .productId(35455)
+                .build();
+
+        var queryWithMultipleLimit = PriceInfoQuery.builder()
+                .brandId(1)
+                .productId(35455)
+                .limit(5)
+                .build();
+
+        assertThat(queryWithoutLimit.isForSingleResult()).isFalse();
+        assertThat(queryWithMultipleLimit.isForSingleResult()).isFalse();
+    }
 }

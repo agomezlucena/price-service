@@ -1,11 +1,6 @@
 package io.github.agomezlucena.priceservice.infrastructure.criteria;
 
-import io.github.agomezlucena.priceservice.domain.criteria.CriterionComparator;
-import io.github.agomezlucena.priceservice.domain.criteria.InvalidPriceCriteriaException;
-import io.github.agomezlucena.priceservice.domain.criteria.PriceInfoCriterion;
-import io.github.agomezlucena.priceservice.domain.criteria.PriceInfoQuery;
-import io.github.agomezlucena.priceservice.domain.criteria.PriceInfoQueryField;
-import io.github.agomezlucena.priceservice.domain.criteria.PriceInfoSortCriterion;
+import io.github.agomezlucena.priceservice.domain.criteria.*;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -15,7 +10,7 @@ import java.util.*;
  * Validates order criteria fields against allowed columns to prevent SQL injection.
  */
 @Component
-public class PriceInfoCriteriaSqlTranslator {
+public class PriceInfoCriteriaSqlTranslator implements PriceInfoQueryTranslator<PriceInfoCriteriaSqlQuery> {
 
     private record FieldMapping(String column, String paramName) {
     }
@@ -51,6 +46,7 @@ public class PriceInfoCriteriaSqlTranslator {
      * @return the generated {@link PriceInfoCriteriaSqlQuery} containing the SQL and parameter map
      * @throws InvalidPriceCriteriaException if an invalid order field is supplied or criteria is null
      */
+    @Override
     public PriceInfoCriteriaSqlQuery translate(PriceInfoQuery criteria) {
         if (criteria == null) {
             throw new InvalidPriceCriteriaException("PriceInfoCriteria cannot be null");

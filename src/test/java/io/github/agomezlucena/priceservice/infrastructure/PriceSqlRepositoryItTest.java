@@ -2,6 +2,7 @@ package io.github.agomezlucena.priceservice.infrastructure;
 
 import io.github.agomezlucena.priceservice.domain.PriceInfo;
 import io.github.agomezlucena.priceservice.domain.criteria.CriterionComparator;
+import io.github.agomezlucena.priceservice.domain.criteria.InvalidPriceCriteriaException;
 import io.github.agomezlucena.priceservice.domain.criteria.PriceInfoQuery;
 import io.github.agomezlucena.priceservice.domain.criteria.PriceInfoSortCriterion;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 import static io.github.agomezlucena.priceservice.domain.criteria.PriceInfoQueryField.LAST_UPDATE_BY;
 import static io.github.agomezlucena.priceservice.domain.criteria.PriceInfoQueryField.PRIORITY;
 import static io.github.agomezlucena.priceservice.domain.criteria.PriceInfoSortDirection.DESC;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @SpringBootTest
@@ -72,5 +74,30 @@ class PriceSqlRepositoryItTest {
         assertThat(obtainedValue)
                 .describedAs("the obtained value should be empty because product does not exist")
                 .isEmpty();
+    }
+
+    @Test
+    void shouldThrowInvalidPriceCriteriaExceptionWhenCriteriaIsNotForSingleResult() {
+        var criteria = PriceInfoQuery.builder()
+                .brandId(1)
+                .productId(35455)
+                .limit(2)
+                .build();
+
+        assertThatThrownBy(() -> priceSqlRepository.findPriceInfoByCriteria(criteria))
+                .isInstanceOf(InvalidPriceCriteriaException.class)
+                .hasMessage("this method allow to extract only one result");
+    }
+
+    @Test
+    void shouldThrowInvalidPriceCriteriaExceptionWhenCriteriaHasNoLimit() {
+        var criteria = PriceInfoQuery.builder()
+                .brandId(1)
+                .productId(35455)
+                .build();
+
+        assertThatThrownBy(() -> priceSqlRepository.findPriceInfoByCriteria(criteria))
+                .isInstanceOf(InvalidPriceCriteriaException.class)
+                .hasMessage("this method allow to extract only one result");
     }
 }

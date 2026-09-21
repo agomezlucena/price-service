@@ -47,6 +47,10 @@ public record PriceInfoQuery(
         }
     }
 
+    public boolean isForSingleResult() {
+        return Integer.valueOf(1).equals(limit);
+    }
+
     /**
      * Creates a new {@code Builder} instance for constructing a {@code PriceInfoQuery}.
      *

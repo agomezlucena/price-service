@@ -280,6 +280,88 @@ All error payloads strictly follow the RFC 9457 Problem Details specification:
 
 ---
 
+## 🔍 Domain Query Specification: PriceInfoQuery
+
+`PriceInfoQuery` is an immutable domain record located in `io.github.agomezlucena.priceservice.domain.criteria`. It encapsulates dynamic query criteria, sorting rules, and result limits for finding price information without binding the domain to any specific persistence technology (e.g., SQL/JPA).
+
+Infrastructure adapters (such as `PriceInfoCriteriaSqlTranslator`) translate a `PriceInfoQuery` into parameterized database queries, maintaining pure separation of concerns according to Onion Architecture.
+
+### Core Components & Enums
+
+- **`PriceInfoQueryField`**: Queryable entity fields (`BRAND_ID`, `PRODUCT_ID`, `START_DATE`, `END_DATE`, `PRICE`, `PRICE_LIST`, `PRIORITY`, `LAST_UPDATE`, `LAST_UPDATE_BY`).
+- **`CriterionComparator`**: Comparison operators (`EQUALS`, `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL`).
+- **`PriceInfoSortDirection`**: Ordering directions (`ASC`, `DESC`).
+- **`PriceInfoSortCriterion`**: Defines a sort field and direction (instantiated via `PriceInfoSortCriterion.of(field, direction)` or constructor).
+- **`InvalidPriceCriteriaException`**: Domain exception thrown when query validation fails.
+
+### Fluent Builder API
+
+Queries are constructed using `PriceInfoQuery.builder()`:
+
+| Builder Method | Description |
+|---|---|
+| `.brandId(Integer brandId)` | Adds an equality filter for `PriceInfoQueryField.BRAND_ID`. |
+| `.productId(Integer productId)` | Adds an equality filter for `PriceInfoQueryField.PRODUCT_ID`. |
+| `.withStartDate(CriterionComparator comparator, LocalDateTime startDate)` | Adds a comparison filter on `PriceInfoQueryField.START_DATE`. |
+| `.withEndDate(CriterionComparator comparator, LocalDateTime endDate)` | Adds a comparison filter on `PriceInfoQueryField.END_DATE`. |
+| `.orderBy(PriceInfoQueryField field, PriceInfoSortDirection sortDirection)` | Adds a single sorting rule. |
+| `.orderBy(PriceInfoSortCriterion... criteria)` | Adds one or more sorting rules in sequence. |
+| `.limit(Integer limit)` | Sets the maximum number of records to retrieve (`limit >= 1`). |
+| `.build()` | Validates inputs and creates the immutable `PriceInfoQuery` instance. |
+
+### Validation Rules & Invariants
+
+The `PriceInfoQuery` compact constructor enforces the following domain rules:
+- **Criteria must not be empty**: At least one filter criterion must be specified; otherwise, an `InvalidPriceCriteriaException` is thrown.
+- **Positive Limit**: If specified, `limit` must be greater than 0 (`limit >= 1`); otherwise, an `InvalidPriceCriteriaException` is thrown.
+- **Null Safety**: Filter criteria and sort criteria lists are defensively copied into unmodifiable lists.
+
+### Usage Examples
+
+#### 1. Price Evaluation by Application Date (Standard Use Case)
+
+Used by `FindPriceInfoUseCase` to find the applicable price for a brand and product at a specific timestamp, prioritizing highest priority and most recent updates:
+
+```java
+import io.github.agomezlucena.priceservice.domain.criteria.CriterionComparator;
+import io.github.agomezlucena.priceservice.domain.criteria.PriceInfoQuery;
+import io.github.agomezlucena.priceservice.domain.criteria.PriceInfoSortCriterion;
+import static io.github.agomezlucena.priceservice.domain.criteria.PriceInfoQueryField.LAST_UPDATE_BY;
+import static io.github.agomezlucena.priceservice.domain.criteria.PriceInfoQueryField.PRIORITY;
+import static io.github.agomezlucena.priceservice.domain.criteria.PriceInfoSortDirection.DESC;
+
+LocalDateTime applicationDate = LocalDateTime.of(2020, 6, 14, 16, 0, 0);
+
+PriceInfoQuery query = PriceInfoQuery.builder()
+        .brandId(1)
+        .productId(35455)
+        .withStartDate(CriterionComparator.LESS_THAN_OR_EQUAL, applicationDate)
+        .withEndDate(CriterionComparator.GREATER_THAN_OR_EQUAL, applicationDate)
+        .orderBy(
+                PriceInfoSortCriterion.of(PRIORITY, DESC),
+                PriceInfoSortCriterion.of(LAST_UPDATE_BY, DESC)
+        )
+        .limit(1)
+        .build();
+```
+
+#### 2. Querying by Brand and Product with Custom Ordering
+
+```java
+import io.github.agomezlucena.priceservice.domain.criteria.PriceInfoQuery;
+import io.github.agomezlucena.priceservice.domain.criteria.PriceInfoQueryField;
+import io.github.agomezlucena.priceservice.domain.criteria.PriceInfoSortDirection;
+
+PriceInfoQuery query = PriceInfoQuery.builder()
+        .brandId(1)
+        .productId(35455)
+        .orderBy(PriceInfoQueryField.PRICE, PriceInfoSortDirection.ASC)
+        .limit(10)
+        .build();
+```
+
+---
+
 ## 🐳 Docker Deployment
 
 Build and run using Docker:
